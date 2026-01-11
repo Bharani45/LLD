@@ -57,28 +57,33 @@ public:
 /* ================= PARKING LOT ================= */
 
 class ParkingLot {
-    unordered_map<int, ParkingRecord*> activeRecords;
-
 public:
-    ~ParkingLot() {
-        for (auto& p : activeRecords) {
-            delete p.second->getVehicle();
-            delete p.second;
+    ParkingLot* ptr;
+    void setnext(ParkingLot* next){
+        ptr=next;
+    }
+    virtual void enter(Vehicle* vehicle, int entryTime)=0;
+    virtual void leave(int vehicleNumber, int leaveTime)=0;
+};
+
+class GroundParking:public ParkingLot{
+    private:
+        unordered_map<int, ParkingRecord*> activeRecords;
+    public:
+    void enter(Vehicle* vehicle, int entryTime) {
+        if(activeRecords.size()<5){
+            int num = vehicle->getNumber();
+            activeRecords[num] = new ParkingRecord(vehicle, entryTime);
+            cout << "Vehicle " << num << " parked in Ground floor\n";
+        }else{
+            ptr->enter(vehicle,entryTime);
         }
     }
-
-    void enter(Vehicle* vehicle, int entryTime) {
-        int num = vehicle->getNumber();
-        activeRecords[num] = new ParkingRecord(vehicle, entryTime);
-        cout << "Vehicle " << num << " parked\n";
-    }
-
-    void leave(int vehicleNumber, int leaveTime) {
+    void leave(int vehicleNumber, int leaveTime){
         if (activeRecords.find(vehicleNumber) == activeRecords.end()) {
             cout << "Vehicle not found\n";
             return;
         }
-
         ParkingRecord* record = activeRecords[vehicleNumber];
         Vehicle* vehicle = record->getVehicle();
 
@@ -92,6 +97,70 @@ public:
         activeRecords.erase(vehicleNumber);
     }
 };
+class FirstFloorParking:public ParkingLot{
+    private:
+        unordered_map<int, ParkingRecord*> activeRecords;
+    public:
+    void enter(Vehicle* vehicle, int entryTime) {
+        if(activeRecords.size()<10){
+            int num = vehicle->getNumber();
+            activeRecords[num] = new ParkingRecord(vehicle, entryTime);
+            cout << "Vehicle " << num << " parked in 1st floor\n";
+        }else{
+            ptr->enter(vehicle,entryTime);
+        }
+    }
+    void leave(int vehicleNumber, int leaveTime){
+        if (activeRecords.find(vehicleNumber) == activeRecords.end()) {
+            cout << "Vehicle not found\n";
+            return;
+        }
+        ParkingRecord* record = activeRecords[vehicleNumber];
+        Vehicle* vehicle = record->getVehicle();
+
+        int duration = leaveTime - record->getEntryTime();
+        int amount = duration * vehicle->getRatePerHour();
+
+        cout << "Pay Rs " << amount << endl;
+
+        delete vehicle;
+        delete record;
+        activeRecords.erase(vehicleNumber);
+    }
+};
+class SecondFloorParking:public ParkingLot{
+    private:
+        unordered_map<int, ParkingRecord*> activeRecords;
+    public:
+    void enter(Vehicle* vehicle, int entryTime) {
+        if(activeRecords.size()<15){
+            int num = vehicle->getNumber();
+            activeRecords[num] = new ParkingRecord(vehicle, entryTime);
+            cout << "Vehicle " << num << " parked in 2nd floor\n";
+        }else{
+            cout<<"Parking full no space left"<<endl;
+        }
+    }
+    void leave(int vehicleNumber, int leaveTime){
+        if (activeRecords.find(vehicleNumber) == activeRecords.end()) {
+            cout << "Vehicle not found\n";
+            return;
+        }
+        ParkingRecord* record = activeRecords[vehicleNumber];
+        Vehicle* vehicle = record->getVehicle();
+
+        int duration = leaveTime - record->getEntryTime();
+        int amount = duration * vehicle->getRatePerHour();
+
+        cout << "Pay Rs " << amount << endl;
+
+        delete vehicle;
+        delete record;
+        activeRecords.erase(vehicleNumber);
+    }
+};
+
+
 
 /* ================= FACTORY ================= */
 
@@ -107,8 +176,11 @@ public:
 /* ================= MAIN ================= */
 
 int main() {
-    ParkingLot parkingLot;
-
+    ParkingLot* gnd=new GroundParking();
+    ParkingLot* first=new FirstFloorParking();
+    ParkingLot* second=new SecondFloorParking();
+    gnd->setnext(first);
+    first->setnext(second);
     int choice = -1;
     while (choice != 4) {
         cout << "\n1. Park Vehicle\n2. Remove Vehicle\n4. Exit\n";
@@ -127,7 +199,7 @@ int main() {
 
             Vehicle* vehicle = VehicleFactory::createVehicle(type, number);
             if (vehicle)
-                parkingLot.enter(vehicle, time);
+                gnd->enter(vehicle, time);
             else
                 cout << "Invalid vehicle type\n";
         }
@@ -137,8 +209,16 @@ int main() {
             cin >> number;
             cout << "Enter leave time: ";
             cin >> time;
-
-            parkingLot.leave(number, time);
+            cout<<"Enter floor"<<endl;
+            int k;
+            cin>>k;
+            if(k==0){
+                gnd->leave(number, time);
+            }else if(k==1){
+                first->leave(number, time);
+            }else{
+                second->leave(number, time);
+            }            
         }
     }
 
