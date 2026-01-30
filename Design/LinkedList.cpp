@@ -114,14 +114,38 @@ DoubleNode* dinsert(DoubleNode* head, int pos, int val) {
     return head;
 }
 
+class Solution{
+    public:
+    int n;
+    int m;
+    int recur(int i,int j,vector<vector<int>>& matrix){
+        if(i>=n || j>=n){
+            return 0;
+        }
+        if(i==n-1){
+            return matrix[i][j];
+        }
+        int sum=0;
+        for(int k=0;k<3;k++){
+            if(k!=j){
+                sum=max(sum,matrix[i][j]+recur(i+1,k,matrix));
+            }
+        }
+        return sum;
+    }
+    int ninjaTraining(vector<vector<int>>& matrix) {
+        n=matrix.size();
+        m=matrix[0].size();
+        int maxi=0;
+        for(int i=0;i<m;i++){
+            maxi=max(maxi,recur(0,i,matrix));
+        }
+        return maxi;
+    }
+};
 int main(){
-    Node* temp=insert(nullptr,0,2);
-    temp=insert(temp,1,5);
-    temp=insert(temp,1,3);
-    temp=insert(temp,1,4);
-    display(temp);
-    temp=delnode(temp,2);
-    display(temp);
-    DoubleNode* dt=dinsert(nullptr,0,1);
+    Solution s;
+    vector<vector<int>>ls= {{70, 40, 10}, {180, 20, 5}, {200, 60, 30}};
+    cout<<s.ninjaTraining(ls);
     return 0;
 }
