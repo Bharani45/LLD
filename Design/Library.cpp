@@ -1,131 +1,163 @@
 #include <bits/stdc++.h>
 using namespace std;
-// -------------------- BOOK -----------------------------//
+
+// Forward declarations
 class Book;
-class State{
-    public:
-        virtual void idle(Book* b)=0;
-        virtual void borrowed(Book* b)=0;
-        virtual void returned(Book* b)=0;
+class Member;
+
+/* ===================== STATE ===================== */
+class State {
+public:
+    virtual void borrow(Book* book, Member* member) = 0;
+    virtual void returnBook(Book* book) = 0;
+    virtual string name() = 0;
+    virtual ~State() = default;
 };
-class Book{
-    public:
-        int id;
-        string author;
-        string title;
-        State* next;
-        Book(int id,string a,string t):id(id),author(a),title(t){}
-        void setstate(State* ptr){
-            next=ptr;
-        }
-        void idle(){
-            next->idle(this);
-        }
-        void borrowed(){
-            next->borrowed(this);
-        }
-        void returned(){
-            next->returned(this);
-        }
+
+/* ===================== BOOK ===================== */
+class Book {
+    int id;
+    string title;
+    string author;
+    State* state;
+    Member* borrowedBy;
+
+public:
+    Book(int id, string title, string author)
+        : id(id), title(title), author(author),
+          state(nullptr), borrowedBy(nullptr) {}
+
+    void setState(State* s) {
+        state = s;
+    }
+
+    void setBorrowedBy(Member* m) {
+        borrowedBy = m;
+    }
+
+    Member* getBorrowedBy() {
+        return borrowedBy;
+    }
+
+    void borrow(Member* member) {
+        state->borrow(this, member);
+    }
+
+    void returnBook() {
+        state->returnBook(this);
+    }
+
+    int getId() const { return id; }
+    string getTitle() const { return title; }
 };
-class Idle:public State{
-    public:
-        void idle(Book* b) override{
-            cout<<"The bool is already idle"<<endl;
-        }
-        void borrowed(Book* b)override;
-        void returned(Book* b)override{
-            cout<<"Book is not borrowed"<<endl;
-        }
+
+/* ===================== MEMBER ===================== */
+class Member {
+    int id;
+    string name;
+
+public:
+    Member(int id, string name) : id(id), name(name) {}
+    int getId() const { return id; }
+    string getName() const { return name; }
 };
-class Borrow:public State{
-    public:
-        void idle(Book* b) override{
-            cout<<"Book is borrowed"<<endl;
-        }
-        void borrowed(Book* b)override{
-            cout<<"Book is aleady borrowed not available"<<endl;
-        }
-        void returned(Book* b)override;
+
+/* ===================== STATES ===================== */
+class AvailableState : public State {
+public:
+    static AvailableState* instance() {
+        static AvailableState instance;
+        return &instance;
+    }
+
+    void borrow(Book* book, Member* member) override;
+    void returnBook(Book* book) override {
+        cout << "Book is already available\n";
+    }
+
+    string name() override {
+        return "Available";
+    }
 };
-class Returned:public State{
-    public:
-        void idle(Book* b) override{
-            b->setstate(new Idle());
-        }
-        void borrowed(Book* b)override{
-            b->setstate(new Borrow());
-        }
-        void returned(Book* b)override{
-            cout<<"Book is already returned"<<endl;
-        }
+
+class BorrowedState : public State {
+public:
+    static BorrowedState* instance() {
+        static BorrowedState instance;
+        return &instance;
+    }
+
+    void borrow(Book* book, Member* member) override {
+        cout << "Book already borrowed\n";
+    }
+
+    void returnBook(Book* book) override;
+
+    string name() override {
+        return "Borrowed";
+    }
 };
-void Idle::borrowed(Book* b){
-    cout<<"Book is borrowed"<<endl;
-    b->setstate(new Borrow());
+
+/* ===================== STATE IMPLEMENTATIONS ===================== */
+void AvailableState::borrow(Book* book, Member* member) {
+    book->setBorrowedBy(member);
+    book->setState(BorrowedState::instance());
+    cout << "Book borrowed by " << member->getName() << "\n";
 }
-void Borrow::returned(Book* b){
-    cout<<"Book is returned"<<endl;
-    b->setstate(new Returned());
+
+void BorrowedState::returnBook(Book* book) {
+    cout << "Book returned by "
+         << book->getBorrowedBy()->getName() << "\n";
+    book->setBorrowedBy(nullptr);
+    book->setState(AvailableState::instance());
 }
-//-----------------------LIBRARIAN--------------------------//
-class Librarian{
-    public:
-        string name;
-        int id;
-        Librarian(int id,string n):name(n),id(id){}
-        void lend(Book* b){
-            b->borrowed();
+
+/* ===================== LIBRARY ===================== */
+class Library {
+    unordered_map<int, unique_ptr<Book>> books;
+
+public:
+    void addBook(int id, string title, string author) {
+        if (books.count(id)) {
+            cout << "Book already exists\n";
+            return;
         }
-        void returned(Book* b){
-            b->returned();
+        auto book = make_unique<Book>(id, title, author);
+        book->setState(AvailableState::instance());
+        books[id] = move(book);
+    }
+
+    void borrowBook(int bookId, Member* member) {
+        if (!books.count(bookId)) {
+            cout << "Book not found\n";
+            return;
         }
-        void add(Book *b){
-            b->setstate(new Idle());
+        books[bookId]->borrow(member);
+    }
+
+    void returnBook(int bookId) {
+        if (!books.count(bookId)) {
+            cout << "Book not found\n";
+            return;
         }
-        
+        books[bookId]->returnBook();
+    }
 };
-class Library{
-    public:
-        Librarian* lb;
-        unordered_map<int,Book*>store;
-        Library(Librarian* ptr){
-            lb=ptr;
-        }
-        void addBook(int id,string author,string title){
-            if(store.count(id)){
-                cout<<"Book alreay exists"<<endl;
-                return;
-            }
-            store[id]=new Book(id,author,title);
-            lb->add(store[id]);
-        }
-        void removeBook(int id){
-            if(store.count(id)){
-                cout<<"No such book"<<endl;
-                return;
-            }
-            delete store[id];
-            store.erase(id);
-        }
-        void getBook(int id){
-            if(!store.count(id)){
-                cout<<"No such book"<<endl;
-                return;
-            }
-            lb->lend(store[id]);
-        }
-        void returnBook(int id){
-            lb->returned(store[id]);
-        }
-};
-int main(){
-    Librarian* kavi=new Librarian(35,"Kavi");
-    Library* lib=new Library(kavi);
-    lib->addBook(1,"Bharani","Adv of narnia");
-    lib->getBook(2);
-    lib->getBook(1);
-    lib->returnBook(1);
-    lib->returnBook(1);
+
+/* ===================== MAIN ===================== */
+int main() {
+    Library library;
+
+    Member bharani(1, "Bharani");
+    Member kavi(2, "Kavi");
+
+    library.addBook(101, "Narnia", "C.S. Lewis");
+
+    library.borrowBook(101, &bharani);
+    library.borrowBook(101, &kavi);
+
+    library.returnBook(101);
+    library.returnBook(101);
+
     return 0;
 }
