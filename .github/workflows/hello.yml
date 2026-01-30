@@ -15,4 +15,3 @@ jobs:
             whoami
             pwd
             uname -a
-
