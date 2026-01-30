@@ -1,26 +1,22 @@
-name: First workflow
+name: C++ CI
 
 on:
   push:
     branches:
       - master
-env:
-  MY_VAR: "Bharani"
+
 jobs:
-  hello-job:
+  build:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      - name: Print hello
-        run: echo "hello from GitHub Actions"
-  bye-job:
-    runs-on: ubuntu-latest
     steps:
-      - name: Show system info
-        run: exit 1
-        continue-on-error: true
-      - name: Use MY_VAR
-        run: echo "MY_VAR is $MY_VAR"
+      - uses: actions/checkout@v4
 
+      - name: Install compiler
+        run: sudo apt-get update && sudo apt-get install -y g++
+
+      - name: Build
+        run: g++ main.cpp -o app
+
+      - name: Run binary
+        run: ./app
