@@ -9,14 +9,15 @@ env:
 jobs:
   hello-job:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Print hello
         run: echo "hello from GitHub Actions"
-
+  bye-job:
+    runs-on: ubuntu-latest
+    steps:
       - name: Show system info
         run: exit 1
         continue-on-error: true
