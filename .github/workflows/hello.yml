@@ -22,3 +22,6 @@ jobs:
           pwd
           uname -a
           ls
+      - name: List repo files
+        run: ls -la
+
