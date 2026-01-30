@@ -17,11 +17,7 @@ jobs:
         run: echo "hello from GitHub Actions"
 
       - name: Show system info
-        run: |
-          whoami
-          pwd
-          uname -a
-          ls
+        run: exit 1
       - name: List repo files
         run: ls -la
 
