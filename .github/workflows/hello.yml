@@ -1,17 +1,24 @@
 name: First workflow
+
 on:
   push:
     branches:
       - master
+
 jobs:
   hello-job:
     runs-on: ubuntu-latest
+
     steps:
-      - name: print hello
-        run: echo "hello from Github actions"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Print hello
+        run: echo "hello from GitHub Actions"
 
       - name: Show system info
-        run: | 
-            whoami
-            pwd
-            uname -a
+        run: |
+          whoami
+          pwd
+          uname -a
+          ls
